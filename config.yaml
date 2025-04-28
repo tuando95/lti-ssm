@@ -1,0 +1,108 @@
+## config.yaml
+
+experiment:
+  name: "LTI_SSM_Paper_Experiments"
+  num_seeds: 1
+  output_dir: "experiment_results_paper"
+  run_comparative: true
+  run_ablations: true
+  run_transfer: false
+
+model_type: 'LTI_SSM'
+
+data:
+  dataset_type: "synthetic_lti"
+  state_dims: [16]
+  spectral_classes: ['mixed_real_complex']
+  systems_per_class_and_dim: 200
+  input_dim: 1
+  output_dim: 1
+  split: [0.7, 0.1, 0.2]
+  noise_sigma: 1.0e-4
+
+model:
+  type: "LTI_SSM"
+  state_dim: 16
+  parameterization_type: 'companion'
+  low_rank_r: 4
+  apply_spectral_norm: true
+  hippo_config:
+    parameterizations:
+      - diagonal
+      - companion
+      - hippo
+      - lowrank
+    init:
+      diagonal:
+        alpha_uniform_range: [-0.5, 0.5]
+      lowrank:
+        U_std: 0.01
+        V_std: 0.01
+      companion:
+        init_from_true_eigenvalues: false
+      hippo:
+        standard_init: true
+    enforce_spectral_norm: true
+
+baselines:
+  types: ["RandomSSM", "SimpleTransformer"]
+  random_ssm_config: {}
+  transformer_config:
+    d_model: 128
+    nhead: 8
+    num_encoder_layers: 6
+    dim_feedforward: 512
+    dropout: 0.1
+    max_len: 200
+
+training:
+  sequence_length: 200
+  horizons: [1, 10, 100]
+  h_max: 100
+  early_stopping:
+    patience: 10
+    metric: 'val_loss'
+    mode: 'min'
+  optimizer: "AdamW"
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  spectral_loss_weight: 0.5
+  spectral_loss_type: 'hungarian_l2'
+  validate_autocorrelation: false
+
+evaluation:
+  metrics_to_compute:
+    - wasserstein_distance
+    - id_error_norm
+    - hungarian_spectral_loss
+  forecast_horizons: [1, 10, 100]
+
+hpo:
+  enabled: false
+  num_trials: 50
+  search_space:
+    training.learning_rate: ["float", 1.0e-4, 1.0e-2, "log"]
+    training.weight_decay: ["float", 1.0e-6, 1.0e-3, "log"]
+    training.spectral_loss_weight: ["categorical", [0.0, 0.25, 0.5, 0.75, 1.0]]
+    model.low_rank_r: ["categorical", [1, 2, 4, 8]]
+  metric_to_optimize: "val_loss"
+
+ablation_studies:
+  - name: "StateDimension"
+    parameter: "model.state_dim"
+    values: [4, 8, 16, 32]
+  - name: "NoiseLevel"
+    parameter: "data.noise_sigma"
+    values: [1.0e-4, 1.0e-3, 1.0e-2]
+  - name: "MuVariation"
+    parameter: "training.spectral_loss_weight"
+    values: [0.0, 0.25, 0.5, 0.75, 1.0]
+  - name: "ParamType"
+    parameter: "model.parameterization_type"
+    values: ['diagonal', 'companion', 'hippo', 'lowrank']
+
+visualization:
+  metric_for_mu_heatmap: "wasserstein_distance"
+  spectral_metric_for_elbow: "wasserstein_distance"
+  plot_eigenvalues: true
+  plot_trajectory: true
