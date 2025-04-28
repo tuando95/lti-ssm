@@ -98,13 +98,15 @@ def run_single_experiment(seed, model_type, config, output_dir):
                 metrics_data = json.load(f)
             
             # --- Add study group information --- #
+            # Ensure this block correctly adds the 'study_group' key
             try:
-                # Infer study group from the parent directory name (e.g., 'comparative', 'ablation_X')
-                study_group = run_output_dir.parent.parent.name 
+                # Use the seed_output_dir variable passed into the function
+                study_group = seed_output_dir.parent.parent.name 
                 metrics_data['study_group'] = study_group
                 logging.debug(f"Added study_group='{study_group}' to metrics for {model_type} seed {seed}")
             except Exception as e:
-                logging.warning(f"Could not determine study_group for {run_output_dir}: {e}. Setting to 'unknown'.")
+                logging.warning(f"Could not determine study_group for {seed_output_dir}: {e}. Setting to 'unknown'.")
+                # Add the key even if inference fails
                 metrics_data['study_group'] = 'unknown'
             # ----------------------------------- #
                 

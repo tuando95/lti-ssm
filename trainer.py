@@ -92,7 +92,7 @@ class Trainer:
         # --------------------
         sched_cfg = self.config.get("scheduler", {})
         warmup_epochs = int(sched_cfg.get("warmup_epochs", 5))
-        total_epochs = int(sched_cfg.get("total_epochs", 20))
+        total_epochs = int(sched_cfg.get("total_epochs", 12))
         steps_per_epoch = len(self.train_loader)
         total_steps = max(1, total_epochs * steps_per_epoch)
         warmup_steps = max(0, warmup_epochs * steps_per_epoch)
